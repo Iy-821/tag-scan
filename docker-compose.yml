@@ -1,0 +1,11 @@
+services:
+  frontend:
+    build: 
+      context: ./frontend  # frontendフォルダのDockerfileを見に行く
+    ports:
+      - "5173:5173"        # PCの5173番ポートとコンテナの5173番をつなぐ
+    volumes:
+      - ./frontend:/app    # WSLのファイルをコンテナに同期（コードを書き換えると即反映されるようにする）
+      - /app/node_modules  # ただし、モジュール群はコンテナ内のものを優先する設定
+    environment:
+      - CHOKIDAR_USEPOLLING=true # 【重要】WSL2からDockerへファイルの変更を検知させるためのおまじない
