@@ -52,7 +52,7 @@ const cropImageFromBase64 = (base64Str) => {
       // 11. 切り抜き終わったキャンバスの絵を、再び Base64（文字列）に戻します。
       // 第2引数の '0.5' は、JPEGの画質を50%に落としてデータ容量を軽くする（圧縮する）指示です。
       // resolve(...) で、「約束（Promise）の処理が終わったよ！この画像を返すよ！」と報告します。
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
+      resolve(canvas.toDataURL('image/jpeg', 1.0));
     };
   });
 };
@@ -171,8 +171,13 @@ function App() {
             <Webcam
               audio={false}
               ref={webcamRef}
-              style={{ width:'100%', display: 'block' }}
-              videoConstraints={{ facingMode:'environment' }}
+              style={{ width:'100%',  display: 'block' }}
+              videoConstraints={{ 
+                facingMode:'environment',
+                width:{ideal:1920},
+                height:{ideal:1920},
+                frameRate:{ideal:30}
+              }}
             />
             <div style={{
               position: 'absolute', top: '50%', left: '50%',
