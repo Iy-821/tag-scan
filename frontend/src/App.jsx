@@ -65,6 +65,7 @@ function App() {
   const [currentText, setCurrentText] = useState("枠内にタグを合わせてください...");
   const [capturedImage, setCapturedImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [count, setCount] = useState(0);
   
   //AIから受け取ったデータを管理する構造体
   const [productData, setProductData] = useState({
