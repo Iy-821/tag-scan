@@ -63,8 +63,10 @@ function App() {
 
   // --- 状態（State）の管理 ---
   const [currentText, setCurrentText] = useState("枠内にタグを合わせてください...");
-  const [capturedImage, setCapturedImage] = useState(null);
+  const [capturedImage, setCapturedImage] = useState();   //capturedImageはただのキャプチャー
+  const [photo, setphoto] = useState([]);   //写真保存庫
   const [isProcessing, setIsProcessing] = useState(false);
+  //件数
   const [count, setCount] = useState(0);
   
   //AIから受け取ったデータを管理する構造体
@@ -79,10 +81,19 @@ function App() {
   // --- 撮影処理 ---
   const handleCaptured = useCallback(async () => {
     const imageSrc = webcamRef.current.getScreenshot(); //変数imageSrcがスクショ
-    const croppedImage = await cropImageFromBase64(imageSrc); //関数によって切り取った写真をcroppedImageに代入
-    setCapturedImage(croppedImage); //usestate
-    analyzeWithGemini(croppedImage);  //関数
+    const image = await cropImageFromBase64(imageSrc);
+    setCapturedImage(image);
+    setphoto((prevPhoto) => [...prevPhoto, image]); //...prevphotoのお陰でprevphotoはphoto配列の全てを指している
+    setCount((prevCount) => prevCount + 1);
   }, [webcamRef]);
+
+
+
+  //AIに投げる部分
+  const handleAnalyze = useCallback(async () => {
+    analyzeWithGemini(photo);  //関数
+  }, [webcamRef,photo]);
+
 
   // --- AI解析処理 ---
   const analyzeWithGemini = async (base64Image) => {
@@ -245,8 +256,25 @@ function App() {
           {isProcessing ? '解析中' : '撮り直す'}
         </button>
       )}
+      {!capturedImage ? (
+        <button
+          style={{ padding:'15px 30px',margin : '30px', fontSize: '18px', cursor: 'pointer', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '50px'}}>
+          テスト
+        </button>
+      ):(
+        <button
+          style={{ padding:'15px 30px',margin : '30px', fontSize: '18px', cursor: 'pointer', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '50px'}}>
+          解析する
+        </button>
+      )}
       
     </div> {/* ← これが元々のメイン画面を閉じるタグ */}
+
+    <div>
+      <label>
+        {count}
+      </label>
+    </div>
 
     {/* 印刷用ラベル */}
     <div className="print-only">
