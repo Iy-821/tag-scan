@@ -66,7 +66,7 @@ function App() {
   const [capturedImage, setCapturedImage] = useState();   //capturedImageはただのキャプチャー
   const [photo, setphoto] = useState([]);   //写真保存庫
   const [isProcessing, setIsProcessing] = useState(false);
-  //件数
+  const [rawResponse, setRawResponse] = useState("");
   const [count, setCount] = useState(0);
   
   //AIから受け取ったデータを管理する構造体
@@ -80,14 +80,16 @@ function App() {
 
   // --- 撮影処理 ---
   const handleCaptured = useCallback(async () => {
-    const imageSrc = webcamRef.current.getScreenshot(); //変数imageSrcがスクショ
-    const image = await cropImageFromBase64(imageSrc);
+    const imageSrc = webcamRef.current.getScreenshot();
+    const image = await cropImageFromBase64(imageSrc);  
     setCapturedImage(image);
     setphoto((prevPhoto) => [...prevPhoto, image]); //...prevphotoのお陰でprevphotoはphoto配列の全てを指している
     setCount((prevCount) => prevCount + 1);
   }, [webcamRef]);
 
-
+  const handleContinue = () =>{
+    setCapturedImage(null);
+  }
 
   //AIに投げる部分
   const handleAnalyze = useCallback(async () => {
@@ -96,23 +98,24 @@ function App() {
 
 
   // --- AI解析処理 ---
-  const analyzeWithGemini = async (base64Image) => {
+  const analyzeWithGemini = async (photoArray) => {
     // 処理中フラグをON
     setIsProcessing(true);
     setCurrentText("読み取り中♪♪");
+    // 印刷フォームを一旦隠す（下の方に書いてある印刷フォームのオンオフに関わる）
+    setIsParsed(false); 
 
-    //tips表示
-
-    setIsParsed(false); // 印刷フォームを一旦隠す（下の方に書いてある印刷フォームのオンオフに関わる）
-
+    // photoArray の中身は ["写真1の文字列", "写真2の文字列", "写真3の文字列"]
+    //() の中にある変数base64Strは、配列の要素1個を指すための一時的な名前。（引数的なもの）
     try {
-      // 1. GoogleのAIは最初の "data:image/jpeg;base64," の部分は不要なので、カンマ (,) で分割して、後ろの純粋なデータ部分 [1] だけを取り出します。
-      const base64Data = base64Image.split(",")[1];
-      
-      // 2. AIに渡すための「画像パーツ」の設計図を作ります。
-      const imagePart = {
-        inlineData: { data: base64Data, mimeType: "image/jpeg" },
-      };
+      const imageParts = photoArray.map((base64Str) => {
+        // 1. カンマで割って純粋なデータにする
+        const pureBase64 = base64Str.split(",")[1];
+        // 2. Gemini専用の箱に入れて返す
+        return {
+          inlineData: { data: pureBase64, mimeType: "image/jpeg" }
+        };
+      });
 
       // 3. AIモデルの呼び出し設定。「3.1-flash-lite」を使い、返事は必ず「JSON形式」にするよう強制（generationConfig）します。
       const model = genAI.getGenerativeModel({ 
@@ -125,24 +128,28 @@ function App() {
       const prompt = `
         あなたはアパレル店舗の在庫管理を支える専門AIです。
         提供された画像から、ラベル印刷に必要な情報を正確に抽出してください。
+        複数の画像が入力された場合、送信された画像の順番通りに、それぞれの画像から商品名とサイズを抽出し、必ず以下のような「JSONの配列（リスト形式）」で出力してください。
         
         【抽出のルール】
         1. 商品名(productName): 「チョーカーツキドロストT」や「チュールビスチェ」のような商品名称を探してください。
-        2. サイズ(size): 「SIZE」という項目の横にある「F」や「M」「L」などを探してください。
+        2. サイズ(size): 「SIZE」という項目の横にある「F」や「M」「L」などを探してください。複数のサイズが記載されている場合、それら全てを読み取ってください。
 
         出力は必ず以下のJSONフォーマットのみで行ってください。
         解説や挨拶は一切不要です。
 
-        {
-          "productName": "見つかった商品名",
-          "size": "見つかったサイズ"
-        }
+        出力フォーマット例（画像が3枚だった場合）
+          [
+            {"productName": "チョーカーツキドロストT", "size": "F"},
+            {"productName": "チュールビスチェ", "size": "S M L LL"},
+            {"productName": "不明", "size": "不明"}
+          ]
       `;
 
       // 5. AIに画像と指示を送り、返事が来るまで待機（await）します。
-      const result = await model.generateContent([prompt, imagePart]);  //generateContent([prompt, imagePart])が投げている部分
+      const result = await model.generateContent([prompt, ...imageParts]);  //generateContent([prompt, imagePart])が投げている部分
       const response = await result.response;
       let text = response.text(); // AIの返事を文字列として取り出す
+      setRawResponse(text);
       
       // 6. 正規表現（/ /g）という手法を使って、AIが勝手につけた ```json などの余計な文字を空文字("")に置き換えて（replace）、前後の空白を削除（trim）します。
       text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -239,7 +246,7 @@ function App() {
           <button 
             onClick={() => window.print()}
             style={{ width: '100%', padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '18px', cursor: 'pointer' }}>
-            🖨️ この内容でラベルを発行する
+            🖨️ ラベルを発行する
           </button>
         </div>
       )}
@@ -247,33 +254,50 @@ function App() {
       {/* アクションボタン */}
       {!capturedImage ? (
         <button onClick={handleCaptured} disabled={isProcessing}
-          style={{ padding:'15px 30px', fontSize: '18px', cursor: 'pointer', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
+          style={{ padding:'15px 30px', fontSize: '18px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
           スキャンする
         </button>
       ) : (
         <button onClick={handleRetake} disabled={isProcessing}
-          style={{ padding:'15px 30px', fontSize: '18px', cursor: 'pointer', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1, marginTop: '10px' }}>
-          {isProcessing ? '解析中' : '撮り直す'}
+          style={{ padding:'15px 30px', fontSize: '18px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1, marginTop: '10px' }}>
+          {isProcessing ? '解析中' : '取り直す'}
         </button>
       )}
-      {!capturedImage ? (
-        <button
-          style={{ padding:'15px 30px',margin : '30px', fontSize: '18px', cursor: 'pointer', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '50px'}}>
-          テスト
-        </button>
-      ):(
-        <button
-          style={{ padding:'15px 30px',margin : '30px', fontSize: '18px', cursor: 'pointer', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '50px'}}>
-          解析する
+
+      {capturedImage && (
+        <button onClick={handleContinue} disabled={isProcessing}
+          style={{ padding:'15px 30px', margin:'30px',  fontSize: '18px', backgroundColor: '#3546dc', color: 'white', border: 'none', borderRadius: '15px'}}>
+            続けて撮影
         </button>
       )}
       
+      {capturedImage && (
+        <button onClick={handleAnalyze} disabled={isProcessing}
+          style={{ padding:'15px 30px',  fontSize: '18px', backgroundColor: '#146931', color: 'white', border: 'none', borderRadius: '15px'}}>
+            解析
+        </button>
+      )}
     </div> {/* ← これが元々のメイン画面を閉じるタグ */}
 
     <div>
-      <label>
-        {count}
-      </label>
+      {rawResponse && (
+        <div style={{
+          marginTop: '40px',
+          padding: '15px',
+          backgroundColor: '#1e1e1e', 
+          color: '#00ff00',           
+          borderRadius: '8px',
+          textAlign: 'left',
+          fontSize: '14px',
+          border: '1px solid #333'
+        }}>
+          <h4 style={{ color: '#fff', marginTop: 0 }}>【デバッグ】AIの生レスポンス</h4>
+          {/* <pre> タグを使うと、AIが返してきた改行やスペースがそのまま綺麗に表示されます */}
+          <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', margin: 0 }}>
+            {rawResponse}
+          </pre>
+        </div>
+      )}
     </div>
 
     {/* 印刷用ラベル */}
