@@ -189,7 +189,7 @@ function App() {
 
   // 特定のカード（インデックス）の、特定の項目（フィールド）を書き換える関数
   const handleChangeData = (index, field, value) => {
-    setProductData((prevData) => {
+    setProductDataList((prevData) => {
       // 1. 現在の配列（prevData）をそっくりそのままコピーして新しい配列を作る
       const newData = [...prevData];
 
@@ -249,7 +249,7 @@ function App() {
         //全体の大枠
         <div style={{ margin: '20px auto', maxWidth: '400px', textAlign: 'left', padding: '15px', border: '2px solid #007BFF', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
           <h3 style={{ fontSize: '18px', color: '#007BFF', marginTop: 0 }}>📋 読み取り結果　{productDataList.length}件</h3>
-          {productData.map((item, index) => (
+          {productDataList.map((item, index) => (
             
             // 1件分の「カード」のデザイン
             // Reactのルールで、一番外側のタグには必ず key={index} をつける！
@@ -278,27 +278,6 @@ function App() {
 
             </div>
           ))}
-          
-          <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
-            商品名:
-            <input 
-              type="text" 
-              value={productDataList.productName} 
-              // キーボードで文字を打った時に、状態（State）を書き換える処理
-              onChange={(e) => setProductDataList({...productDataList, productName: e.target.value})}
-              style={{ width: '100%', padding: '10px', marginTop: '5px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }}
-            />
-          </label>
-
-          <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
-            サイズ:
-            <input 
-              type="text" 
-              value={productDataList.size} 
-              onChange={(e) => setProductDataList({...productDataList, size: e.target.value})}
-              style={{ width: '100%', padding: '10px', marginTop: '5px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }}
-            />
-          </label>
 
           <button 
             onClick={() => window.print()}
@@ -359,16 +338,18 @@ function App() {
 
     {/* 印刷用ラベル */}
     <div className="print-only">
-      <table className="custom-label-table">
-        <tbody>
-          <tr>
-            <th>商品名：</th>
-            <td>{productDataList.productName}</td>
-            <th>サイズ：</th>
-            <td>{productDataList.size}</td>
-          </tr>
-        </tbody>
-      </table>
+      {productDataList.map((item, index) => (
+        <table key={index} className="custom-label-table" style={{ marginBottom: '20px' }}>
+          <tbody>
+            <tr>
+              <th>商品名：</th>
+              <td>{item.productName}</td>
+              <th>サイズ：</th>
+              <td>{item.size}</td>
+            </tr>
+          </tbody>
+        </table>
+      ))}
     </div>
 
   </>  /* ← ★★★ここが正解！！！この「空の閉じタグ」を追加してください★★★ */
