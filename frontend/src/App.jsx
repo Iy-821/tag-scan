@@ -70,10 +70,7 @@ function App() {
   const [count, setCount] = useState(0);
   
   //AIから受け取ったデータを管理する構造体
-  const [productData, setProductData] = useState({
-    productName: "",
-    size: ""
-  });
+  const [productDataList, setProductDataList] = useState([]);
 
   //解析が成功したかどうかを判定するフラグ
   const [isParsed, setIsParsed] = useState(false);
@@ -90,6 +87,25 @@ function App() {
   const handleContinue = () =>{
     setCapturedImage(null);
   }
+
+  const handleRetake = () => {
+    setCapturedImage(null);
+    setIsParsed(false); // フォームを隠す
+    setCurrentText("枠内にタグを合わせてください...");
+    setCount((prevCount) => prevCount - 1);
+    setphoto((prevPhoto) => prevPhoto.slice(0,-1));  // 写真の配列から、最新の1枚を取り除く
+  }
+
+  const handleNewtake = () => {
+    //初期化
+    setCapturedImage(null);
+    setIsParsed(false); // フォームを隠す
+    setProductDataList([]); // データを空に戻す
+    setCurrentText("枠内にタグを合わせてください...");
+    setCount(0);
+    setphoto([]);
+  }
+
 
   //AIに投げる部分
   const handleAnalyze = useCallback(async () => {
@@ -156,9 +172,9 @@ function App() {
 
       // 7. 文字列（ただの文字の羅列）を、JavaScriptが操作できる「JSONオブジェクト（データの塊）」に変換（パース）します。
       const data = JSON.parse(text); 
-      
       // 8. 変換したデータをStateに保存します。これで画面のフォームに文字が入ります。
-      setProductData(data); //構造体にデータが入る
+      setProductDataList(data); //構造体にデータが入る
+
       setIsParsed(true); 
       setCurrentText("必要に応じて修正してください。");
 
@@ -170,13 +186,24 @@ function App() {
     }
   };
 
-  // --- 撮り直し処理 ---
-  const handleRetake = () => {
-    setCapturedImage(null);
-    setIsParsed(false); // フォームを隠す
-    setProductData({ productName: "", size: "" }); // データを空に戻す
-    setCurrentText("枠内にタグを合わせてください...");
-  }
+
+  // 特定のカード（インデックス）の、特定の項目（フィールド）を書き換える関数
+  const handleChangeData = (index, field, value) => {
+    setProductData((prevData) => {
+      // 1. 現在の配列（prevData）をそっくりそのままコピーして新しい配列を作る
+      const newData = [...prevData];
+
+      // 2. コピーした配列の「index番目」のオブジェクトを見つけ、
+      //    その中の「field（productName または size）」を「新しい文字（value）」に書き換える
+      newData[index] = {
+        ...newData[index],       // 元々入っていた他の項目（書き換えない方）をキープ
+        [field]: value           // 指定された項目だけを上書き
+      };
+
+      // 3. 完璧に仕上がった新しい配列をReactに返して、画面を更新してもらう
+      return newData;
+    });
+  };
 
   // --- 画面の表示（JSX） ---
   return (
@@ -219,16 +246,46 @@ function App() {
 
       {/* ★今回のメイン：解析成功時（isParsedがtrue）に表示される入力フォーム */}
       {isParsed && (
+        //全体の大枠
         <div style={{ margin: '20px auto', maxWidth: '400px', textAlign: 'left', padding: '15px', border: '2px solid #007BFF', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
-          <h3 style={{ fontSize: '18px', color: '#007BFF', marginTop: 0 }}>📋 読み取り結果（修正可能）</h3>
+          <h3 style={{ fontSize: '18px', color: '#007BFF', marginTop: 0 }}>📋 読み取り結果　{productDataList.length}件</h3>
+          {productData.map((item, index) => (
+            
+            // 1件分の「カード」のデザイン
+            // Reactのルールで、一番外側のタグには必ず key={index} をつける！
+            <div key={index} style={{ border: '2px solid #ccc', padding: '15px', marginBottom: '15px', borderRadius: '8px' }}>
+
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                商品名:
+                {/* value には、この1件分（item）のデータを表示する */}
+                <input 
+                  type="text" 
+                  value={item.productName} 
+                  onChange={(e) => handleChangeData(index, 'productName', e.target.value)}
+                  style={{ width: '100%', padding: '10px' }}
+                />
+              </label>
+
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                サイズ:
+                <input 
+                  type="text" 
+                  value={item.size} 
+                  onChange={(e) => handleChangeData(index, 'size', e.target.value)}
+                  style={{ width: '100%', padding: '10px' }}
+                />
+              </label>
+
+            </div>
+          ))}
           
           <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
             商品名:
             <input 
               type="text" 
-              value={productData.productName} 
+              value={productDataList.productName} 
               // キーボードで文字を打った時に、状態（State）を書き換える処理
-              onChange={(e) => setProductData({...productData, productName: e.target.value})}
+              onChange={(e) => setProductDataList({...productDataList, productName: e.target.value})}
               style={{ width: '100%', padding: '10px', marginTop: '5px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }}
             />
           </label>
@@ -237,8 +294,8 @@ function App() {
             サイズ:
             <input 
               type="text" 
-              value={productData.size} 
-              onChange={(e) => setProductData({...productData, size: e.target.value})}
+              value={productDataList.size} 
+              onChange={(e) => setProductDataList({...productDataList, size: e.target.value})}
               style={{ width: '100%', padding: '10px', marginTop: '5px', boxSizing: 'border-box', border: '1px solid #ccc', borderRadius: '4px' }}
             />
           </label>
@@ -306,9 +363,9 @@ function App() {
         <tbody>
           <tr>
             <th>商品名：</th>
-            <td>{productData.productName}</td>
+            <td>{productDataList.productName}</td>
             <th>サイズ：</th>
-            <td>{productData.size}</td>
+            <td>{productDataList.size}</td>
           </tr>
         </tbody>
       </table>
