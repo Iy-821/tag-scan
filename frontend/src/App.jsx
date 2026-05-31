@@ -66,8 +66,9 @@ function App() {
   const [capturedImage, setCapturedImage] = useState();   //capturedImageはただのキャプチャー
   const [photo, setphoto] = useState([]);   //写真保存庫
   const [isProcessing, setIsProcessing] = useState(false);
-  const [rawResponse, setRawResponse] = useState("");
   const [count, setCount] = useState(0);
+  const [isJobScreenOpen, setIsJobScreenOpen] = useState(false);
+
   
   //AIから受け取ったデータを管理する構造体
   const [productDataList, setProductDataList] = useState([]);
@@ -165,7 +166,6 @@ function App() {
       const result = await model.generateContent([prompt, ...imageParts]);  //generateContent([prompt, imagePart])が投げている部分
       const response = await result.response;
       let text = response.text(); // AIの返事を文字列として取り出す
-      setRawResponse(text);
       
       // 6. 正規表現（/ /g）という手法を使って、AIが勝手につけた ```json などの余計な文字を空文字("")に置き換えて（replace）、前後の空白を削除（trim）します。
       text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -205,6 +205,17 @@ function App() {
     });
   };
 
+  const handleDeletePhoto = (targetIndex) => {
+    // 1. 写真の配列を更新する
+    setphoto((prevPhoto) => {
+      // prevPhoto の中から、「現在の出席番号(index)」が「消したい番号(targetIndex)」と
+      // 『一致しない（!==）』ものだけを合格として残す！
+      return prevPhoto.filter((_, index) => index !== targetIndex);
+    });
+    // 2. 全体の撮影枚数（count）も1つ減らす
+    setCount((prevCount) => prevCount - 1);
+  };
+
   // --- 画面の表示（JSX） ---
   return (
     <>
@@ -217,6 +228,8 @@ function App() {
             <Webcam
               audio={false}
               ref={webcamRef}
+              screenshotFormat="image/jpeg"     // ★追加：画質を保ちやすいJPEGを指定
+              forceScreenshotSourceSize={true}  // ★追加：画面サイズに依存せず、元の高画質でスクショを撮る！
               style={{ width:'100%',  display: 'block' }}
               videoConstraints={{ 
                 facingMode:'environment',
@@ -236,7 +249,7 @@ function App() {
           </>
         )}
         {capturedImage && (
-          <img src={capturedImage} alt="切り取られた写真" style={{ width: '100%', display: 'block', backgroundColor: '#000' }} />
+          <img src={capturedImage} alt="切り取られた写真" style={{ width: '100%',display: 'block', backgroundColor: '#000' }} />
         )}
       </div>
 
@@ -244,11 +257,12 @@ function App() {
         <p>ステータス：{currentText}</p>
       </div>
 
+
       {/* ★今回のメイン：解析成功時（isParsedがtrue）に表示される入力フォーム */}
       {isParsed && (
         //全体の大枠
         <div style={{ margin: '20px auto', maxWidth: '400px', textAlign: 'left', padding: '15px', border: '2px solid #007BFF', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
-          <h3 style={{ fontSize: '18px', color: '#007BFF', marginTop: 0 }}>📋 読み取り結果　{productDataList.length}件</h3>
+          <h3 style={{ fontSize: '18px', color: '#0e77ee', marginTop: 0 }}>📋 読み取り結果 {productDataList.length}件</h3>
           {productDataList.map((item, index) => (
             
             // 1件分の「カード」のデザイン
@@ -262,7 +276,7 @@ function App() {
                   type="text" 
                   value={item.productName} 
                   onChange={(e) => handleChangeData(index, 'productName', e.target.value)}
-                  style={{ width: '100%', padding: '10px' }}
+                  style={{ width: '90%', padding: '10px' }}
                 />
               </label>
 
@@ -272,7 +286,7 @@ function App() {
                   type="text" 
                   value={item.size} 
                   onChange={(e) => handleChangeData(index, 'size', e.target.value)}
-                  style={{ width: '100%', padding: '10px' }}
+                  style={{ width: '90%', padding: '10px' }}
                 />
               </label>
 
@@ -281,60 +295,112 @@ function App() {
 
           <button 
             onClick={() => window.print()}
-            style={{ width: '100%', padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '18px', cursor: 'pointer' }}>
+            style={{ width: '100%', padding: '15px', backgroundColor: '#6bc232', color: 'white', border: 'none', borderRadius: '5px', fontSize: '18px', cursor: 'pointer' }}>
             🖨️ ラベルを発行する
           </button>
         </div>
       )}
 
       {/* アクションボタン */}
-      {!capturedImage ? (
-        <button onClick={handleCaptured} disabled={isProcessing}
+      {!capturedImage && (
+        <button onClick={handleCaptured} disabled={isProcessing} 
           style={{ padding:'15px 30px', fontSize: '18px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
           スキャンする
         </button>
-      ) : (
-        <button onClick={handleRetake} disabled={isProcessing}
-          style={{ padding:'15px 30px', fontSize: '18px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1, marginTop: '10px' }}>
-          {isProcessing ? '解析中' : '取り直す'}
-        </button>
       )}
 
       {capturedImage && (
+        <div>
+        <button onClick={handleRetake} disabled={isProcessing} 
+          style={{ padding:'15px 30px', margin:'15px', fontSize: '18px', backgroundColor: '#ad3213', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0 : 1}}>
+          取り直す
+        </button>
+
+        <button onClick={() => {setIsJobScreenOpen(true)}} disabled={isProcessing}
+          style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#a18712', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+          ジョブ表示
+        </button>
+
         <button onClick={handleContinue} disabled={isProcessing}
-          style={{ padding:'15px 30px', margin:'30px',  fontSize: '18px', backgroundColor: '#3546dc', color: 'white', border: 'none', borderRadius: '15px'}}>
-            続けて撮影
+          style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#239182', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+          続けて撮影
         </button>
-      )}
-      
-      {capturedImage && (
-        <button onClick={handleAnalyze} disabled={isProcessing}
-          style={{ padding:'15px 30px',  fontSize: '18px', backgroundColor: '#146931', color: 'white', border: 'none', borderRadius: '15px'}}>
-            解析
-        </button>
-      )}
-    </div> {/* ← これが元々のメイン画面を閉じるタグ */}
 
-    <div>
-      {rawResponse && (
-        <div style={{
-          marginTop: '40px',
-          padding: '15px',
-          backgroundColor: '#1e1e1e', 
-          color: '#00ff00',           
-          borderRadius: '8px',
-          textAlign: 'left',
-          fontSize: '14px',
-          border: '1px solid #333'
-        }}>
-          <h4 style={{ color: '#fff', marginTop: 0 }}>【デバッグ】AIの生レスポンス</h4>
-          {/* <pre> タグを使うと、AIが返してきた改行やスペースがそのまま綺麗に表示されます */}
-          <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', margin: 0 }}>
-            {rawResponse}
-          </pre>
+        <button onClick={handleAnalyze} disabled={isProcessing}
+          style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1b6ad1', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+          解析
+        </button>
         </div>
       )}
-    </div>
+
+      <div>
+        {/*フラグが true なら、この下のカタマリ（ジョブ画面）を『追加で』表示する！ */}
+        {isJobScreenOpen && (
+          // ▼ ここからが「上に重ねる」ための特殊なCSSの枠 ▼
+          <div style={{
+            position: 'fixed',    // 画面全体にピタッと固定
+            top: 0, left: 0,      // 一番左上を基準にする
+            width: '100vw',       // 横幅を画面の100%に
+            height: '100vh',      // 縦幅を画面の100%に
+            backgroundColor: 'rgba(0, 0, 0, 0.7)', // 背景を「80%の濃さの黒（半透明）」にする
+            zIndex: 9999,         // 【重要】数字をデカくして、何よりも一番手前に持ってくる！
+            display: 'flex',      // 中身のレイアウト用
+            justifyContent: 'center', // 左右のど真ん中に配置
+            alignItems: 'center'      // 上下のど真ん中に配置
+          }}>
+            
+            {/* ▼ これが半透明の黒背景の上に浮かび上がる「白いカード（ジョブ画面本体）」 ▼ */}
+            <div style={{
+              backgroundColor: '#fff', 
+              width: '80%',         // スマホ画面の90%の幅
+              height: '90%',        // スマホ画面の80%の高さ
+              borderRadius: '12px', // 角を丸くする
+              padding: '20px', 
+              overflowY: 'auto'     // 写真が多くなったら縦にスクロールできるようにする
+            }}>
+              
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <h3 style={{ marginTop: 0 }}>撮影済みリスト（{count}枚）</h3>
+              <button onClick={() => setIsJobScreenOpen(false)}>✖️ 閉じる</button>
+            </div>
+
+              {/* ここに先ほどのヒント2で紹介した、写真を .map で並べるコードを入れる */}
+              {photo.map((src,index) =>(
+                <div key={index} style={{ position: 'relative', display: 'inline-block', margin: '10px' }}>
+                  <img src={src} alt={`写真${index}`} style={{ width: '600px' }}></img>
+                  <button 
+                    onClick={() => handleDeletePhoto(index)}
+                    style={{
+                      position: 'absolute',
+                      top: '-10px',      // ★写真の上端から上に10pxはみ出させる
+                      left: '-10px',    // ★写真の右端から右に10pxはみ出させる
+                      width: '30px',     // ボタンの丸の大きさ
+                      height: '30px',
+                      borderRadius: '50%', // まん丸にする
+                      backgroundColor: '#dc3545', // 警告の赤色
+                      color: 'white',
+                      border: '2px solid white', // 白いフチをつけるとオシャレ
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.3)', // 影をつけて浮かせ見せる
+                      padding: 0
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+
+           </div>
+        </div>
+        )}
+      </div>
+
+    </div> {/* ← これが元々のメイン画面を閉じるタグ */}
+
 
     {/* 印刷用ラベル */}
     <div className="print-only">
@@ -353,8 +419,6 @@ function App() {
     </div>
 
   </>  /* ← ★★★ここが正解！！！この「空の閉じタグ」を追加してください★★★ */
-    
   );
 }
-
 export default App;
