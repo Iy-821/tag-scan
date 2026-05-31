@@ -3,6 +3,7 @@ import { useState ,useRef, useCallback } from "react";
 import Webcam from 'react-webcam';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import './App.css';
+import { TEST_IMAGE_BASE64 } from './testImageData';
 
 // ==========================================
 // ★ここに取得したAPIキーを貼り付けてください★
@@ -17,38 +18,28 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 const cropImageFromBase64 = (base64Str) => {
   // 1. Promise（プロミス）：画像処理は時間がかかるので、「終わるまで待っててね」という約束（非同期処理）を作ります。
   return new Promise((resolve) => {
-    
     // 2. メモリ上に、見えない <img> タグを作ります。
     const img = new Image();
-    
     // 3. その <img> タグに、カメラで撮った画像データ（長い文字列）を読み込ませます。
     img.src = base64Str;
-    
     // 4. onload = 「画像の読み込みが完全に終わったら、次の処理をしてね」という指示。
     img.onload = () => {
-      
       // 5. メモリ上に、見えない <canvas>（お絵描きボード）を作ります。
       const canvas = document.createElement('canvas');
-      
       // 6. 切り抜きたいサイズを計算（元の横幅の80%、縦幅の30%）
       const cropWidth = img.width * 0.8;
       const cropHeight = img.height * 0.6;
-      
       // 7. 切り抜くスタート位置（左上の座標 X, Y）を計算。全体から切り抜きサイズを引いて半分にすると、ド真ん中になります。
       const startX = (img.width - cropWidth) / 2;
       const startY = (img.height - cropHeight) / 2;
-
       // 8. キャンバス自体の大きさを、切り抜きサイズに合わせます。
       canvas.width = cropWidth;
       canvas.height = cropHeight;
-      
       // 9. キャンバスに絵を描くための「筆（コンテキスト）」を用意します。
       const ctx = canvas.getContext('2d');
-
       // 10. 筆を使って、元の画像をキャンバスに描きます（ここでハサミで切り取る処理が行われます）。
       // drawImage(画像, 元画像の切り抜き開始X, Y, 切り抜く幅, 高さ, キャンバスの描画開始X, Y, 描画する幅, 高さ)
       ctx.drawImage(img, startX, startY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-
       // 11. 切り抜き終わったキャンバスの絵を、再び Base64（文字列）に戻します。
       // 第2引数の '0.5' は、JPEGの画質を50%に落としてデータ容量を軽くする（圧縮する）指示です。
       // resolve(...) で、「約束（Promise）の処理が終わったよ！この画像を返すよ！」と報告します。
@@ -68,6 +59,10 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [count, setCount] = useState(0);
   const [isJobScreenOpen, setIsJobScreenOpen] = useState(false);
+
+  const testImagePart = {
+    inlineData: { data: TEST_IMAGE_BASE64, mimeType: "image/jpeg" }
+  };
 
   
   //AIから受け取ったデータを管理する構造体
@@ -141,29 +136,45 @@ function App() {
       });
 
       // 4. プロンプト（指示文）。ここでJSONのキー名（productName等）を指定しておくことが超重要です。
-      //product codeを抜いた
-      const prompt = `
+      const promptStart = `
         あなたはアパレル店舗の在庫管理を支える専門AIです。
         提供された画像から、ラベル印刷に必要な情報を正確に抽出してください。
         複数の画像が入力された場合、送信された画像の順番通りに、それぞれの画像から商品名とサイズを抽出し、必ず以下のような「JSONの配列（リスト形式）」で出力してください。
-        
         【抽出のルール】
         1. 商品名(productName): 「チョーカーツキドロストT」や「チュールビスチェ」のような商品名称を探してください。
         2. サイズ(size): 「SIZE」という項目の横にある「F」や「M」「L」などを探してください。複数のサイズが記載されている場合、それら全てを読み取ってください。
 
         出力は必ず以下のJSONフォーマットのみで行ってください。
         解説や挨拶は一切不要です。
-
         出力フォーマット例（画像が3枚だった場合）
           [
             {"productName": "チョーカーツキドロストT", "size": "F"},
             {"productName": "チュールビスチェ", "size": "S M L LL"},
             {"productName": "不明", "size": "不明"}
           ]
+
+        【例題】
+        例えば、以下のような画像が入力された場合、出力の正解はこうなります。
+      `;
+
+      const promptExpectedOutput = `
+        [
+          {"productName": "ラメソデSRGSSTOPS", "size": "LL F"}
+        ]
+
+        【本番】
+        ルールは理解できましたね。
+        それでは、上記を踏まえて以下の画像を解析し、JSONの配列のみを出力してください。
       `;
 
       // 5. AIに画像と指示を送り、返事が来るまで待機（await）します。
-      const result = await model.generateContent([prompt, ...imageParts]);  //generateContent([prompt, imagePart])が投げている部分
+      //const result = await model.generateContent([prompt, ...imageParts]);  //generateContent([prompt, imagePart])が投げている部分
+      const result = await model.generateContent([
+        promptStart,
+        testImagePart,        
+        promptExpectedOutput,
+        ...imageParts         
+      ]);
       const response = await result.response;
       let text = response.text(); // AIの返事を文字列として取り出す
       
