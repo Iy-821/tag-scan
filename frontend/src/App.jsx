@@ -367,7 +367,7 @@ function App() {
               {/* ここに先ほどのヒント2で紹介した、写真を .map で並べるコードを入れる */}
               {photo.map((src,index) =>(
                 <div key={index} style={{ position: 'relative', display: 'inline-block', margin: '10px' }}>
-                  <img src={src} alt={`写真${index}`} style={{ width: '600px' }}></img>
+                  <img src={src} alt={`写真${index}`} style={{ width: '100%' }}></img>
                   <button 
                     onClick={() => handleDeletePhoto(index)}
                     style={{
