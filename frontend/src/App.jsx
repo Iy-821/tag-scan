@@ -2,7 +2,8 @@
 import { useState ,useRef, useCallback } from "react";
 import Webcam from 'react-webcam';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import './App.css';
+//import './App.css';
+import UIDemo from './UIDemo.jsx'
 import { TEST_IMAGE_BASE64 } from './testImageData';
 
 // ==========================================
