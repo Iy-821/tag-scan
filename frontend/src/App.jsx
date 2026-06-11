@@ -267,36 +267,55 @@ function App() {
 
         // 画面④：カメラ起動中（デフォルト画面）
         ) : (
-          <>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, backgroundColor: '#000' }}>
-              <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment' }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10, display: 'flex', flexDirection: 'column' }}>
-              {/* ヘッダー */}
-              <div style={{ padding: '20px', paddingTop: '50px', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                <h1 style={{ textAlign: 'center', margin: 0, fontSize: '20px', letterSpacing: '2px' }}>タグ読みくん</h1>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#000' }}>
+            
+            {/* ▼ 上半分：カメラとスキャン枠（ここで映像と影をスパッと切る） ▼ */}
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+              
+              {/* カメラ映像（上半分にだけ表示される） */}
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
+                <Webcam audio={false} ref={webcamRef} screenshotFormat="image/jpeg" videoConstraints={{ facingMode: 'environment' }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
 
-              {/* スキャン枠（ドーナツ穴 ＋ レーザー） */}
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+              {/* 暗い影とカギカッコ */}
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                {/* 魔法の巨大な影（overflow: hidden のおかげで下に漏れなくなります） */}
                 <div style={{ position: 'absolute', width: '260px', height: '260px', boxShadow: '0 0 0 9999px rgba(18, 18, 18, 0.85)', borderRadius: '24px' }}></div>
+                
+                {/* 動くレーザーとカギカッコ */}
                 <div className="scan-frame">
+                  <div className="corner top-left"></div>
+                  <div className="corner top-right"></div>
+                  <div className="corner bottom-left"></div>
+                  <div className="corner bottom-right"></div>
                   <div className="laser-line"></div>
                 </div>
               </div>
 
-              <p style={{ textAlign: 'center', fontSize: '14px', marginBottom: '30px', textShadow: '0 2px 4px #000' }}>
+              {/* タイトル（カメラの上に浮かせる） */}
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', padding: '20px', paddingTop: '50px', zIndex: 10 }}>
+                <h1 style={{ textAlign: 'center', margin: 0, fontSize: '20px', letterSpacing: '2px', textShadow: '0 2px 4px #000' }}>タグ読みくん</h1>
+              </div>
+            </div>
+
+            {/* ▼ 下半分：操作エリア（完全に真っ黒な背景で独立） ▼ */}
+            <div style={{ backgroundColor: '#121212', padding: '20px 20px 50px', zIndex: 10 }}>
+              
+              {/* ご要望の「枠内に〜」のテキスト */}
+              <p style={{ textAlign: 'center', fontSize: '14px', marginBottom: '30px', color: '#fff' }}>
                 枠内にスキャンしたいタグを収めてください。
               </p>
 
-              {/* ボトム操作エリア */}
-              <div style={{ display: 'flex', justifyContent: 'space-evenly', alignItems: 'flex-end', padding: '0 40px 40px', backgroundColor: 'rgba(0,0,0,0.6)', paddingBottom: '60px' }}>
+              {/* 3つのボタン */}
+              <div style={{ display: 'flex', justifyContent: 'space-evenly', alignItems: 'center' }}>
+                
+                {/* アルバム */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
                   <div style={{ width: '60px', height: '60px', borderRadius: '30px', backgroundColor: '#333', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px' }}>🖼️</div>
                   <span style={{ fontSize: '12px', marginTop: '8px', color: '#bbb' }}>アルバム</span>
                 </div>
 
+                {/* シャッター（遅延撮影） */}
                 <button 
                   onClick={handleShutterClick} 
                   style={{ width: '80px', height: '80px', borderRadius: '40px', backgroundColor: 'transparent', border: '4px solid #fff', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', padding: 0 }}
@@ -304,6 +323,7 @@ function App() {
                   <div style={{ width: '64px', height: '64px', borderRadius: '32px', backgroundColor: isShooting ? '#ccc' : '#fff', transition: '0.2s' }}></div>
                 </button>
 
+                {/* 解析へ */}
                 <div onClick={photo.length > 0 ? handleAnalyze : undefined} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: photo.length > 0 ? 'pointer' : 'not-allowed', opacity: photo.length > 0 ? 1 : 0.5 }}>
                   <div style={{ width: '60px', height: '60px', borderRadius: '30px', backgroundColor: '#333', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '24px', position: 'relative' }}>
                     📋
@@ -311,9 +331,11 @@ function App() {
                   </div>
                   <span style={{ fontSize: '12px', marginTop: '8px', color: '#bbb' }}>解析へ</span>
                 </div>
+
               </div>
             </div>
-          </>
+
+          </div>
         )}
       </div>
     </div>
