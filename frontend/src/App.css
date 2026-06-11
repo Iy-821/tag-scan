@@ -1,243 +1,143 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+/* --- ViteデフォルトのCSS（そのまま残しています） --- */
+.counter { font-size: 16px; padding: 5px 10px; border-radius: 5px; color: var(--accent); background: var(--accent-bg); border: 2px solid transparent; transition: border-color 0.3s; margin-bottom: 24px; }
+.counter:hover { border-color: var(--accent-border); }
+.counter:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hero { position: relative; }
+.hero .base, .hero .framework, .hero .vite { inset-inline: 0; margin: 0 auto; }
+.hero .base { width: 170px; position: relative; z-index: 0; }
+.hero .framework, .hero .vite { position: absolute; }
+.hero .framework { z-index: 1; top: 34px; height: 28px; transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg) scale(1.4); }
+.hero .vite { z-index: 0; top: 107px; height: 26px; width: auto; transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg) scale(0.8); }
+#center { display: flex; flex-direction: column; gap: 25px; place-content: center; place-items: center; flex-grow: 1; }
+@media (max-width: 1024px) { #center { padding: 32px 20px 24px; gap: 18px; } }
+#next-steps { display: flex; border-top: 1px solid var(--border); text-align: left; }
+#next-steps > div { flex: 1 1 0; padding: 32px; }
+@media (max-width: 1024px) { #next-steps > div { padding: 24px 20px; } #next-steps { flex-direction: column; text-align: center; } }
+#next-steps .icon { margin-bottom: 16px; width: 22px; height: 22px; }
+#docs { border-right: 1px solid var(--border); }
+@media (max-width: 1024px) { #docs { border-right: none; border-bottom: 1px solid var(--border); } }
+#next-steps ul { list-style: none; padding: 0; display: flex; gap: 8px; margin: 32px 0 0; }
+#next-steps ul .logo { height: 18px; }
+#next-steps ul a { color: var(--text-h); font-size: 16px; border-radius: 6px; background: var(--social-bg); display: flex; padding: 6px 12px; align-items: center; gap: 8px; text-decoration: none; transition: box-shadow 0.3s; }
+#next-steps ul a:hover { box-shadow: var(--shadow); }
+#next-steps ul a .button-icon { height: 18px; width: 18px; }
+@media (max-width: 1024px) { #next-steps ul { margin-top: 20px; flex-wrap: wrap; justify-content: center; } #next-steps ul li { flex: 1 1 calc(50% - 8px); } #next-steps ul a { width: 100%; justify-content: center; box-sizing: border-box; } }
+#spacer { height: 88px; border-top: 1px solid var(--border); }
+@media (max-width: 1024px) { #spacer { height: 48px; } }
+.ticks { position: relative; width: 100%; }
+.ticks::before, .ticks::after { content: ''; position: absolute; top: -4.5px; border: 5px solid transparent; }
+.ticks::before { left: 0; border-left-color: var(--border); }
+.ticks::after { right: 0; border-right-color: var(--border); }
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-}
-
-.hero {
+/* =========================================
+   📸 カメラUI（スキャン枠とレーザーアニメーション）
+========================================= */
+.scan-frame {
+  width: 260px;
+  height: 260px;
   position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
 }
 
-#center {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+/* 4つの角に青いカギカッコを作る */
+.scan-frame::before, .scan-frame::after,
+.scan-frame .laser-line::before, .scan-frame .laser-line::after {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 4px solid #fff; /* ダークモードに映える白枠（青に変えてもOK） */
 }
 
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
+.scan-frame::before { top: 0; left: 0; border-right: none; border-bottom: none; border-top-left-radius: 12px; }
+.scan-frame::after { top: 0; right: 0; border-left: none; border-bottom: none; border-top-right-radius: 12px; }
+.scan-frame .laser-line::before { bottom: -256px; left: 0; border-right: none; border-top: none; border-bottom-left-radius: 12px; }
+.scan-frame .laser-line::after { bottom: -256px; right: 0; border-left: none; border-top: none; border-bottom-right-radius: 12px; }
 
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+/* 🔵 動くブルーレーザー */
+.laser-line {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: linear-gradient(to right, transparent, #007bff, transparent);
+  box-shadow: 0 0 10px #007bff;
+  animation: scan 2.5s ease-in-out infinite;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-}
-
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
-}
-
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
-}
-
-.ticks {
-  position: relative;
-  width: 100%;
-
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
-
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
-  }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
-  }
+@keyframes scan {
+  0% { top: 5%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 95%; opacity: 0; }
 }
 
 /* =========================================
-   1. 印刷する瞬間だけ発動する魔法
+   🖨️ 印刷用スタイルの最適化
 ========================================= */
 @media print {
-  /* 普段画面に出ているカメラやボタン（.no-print）を全部消す */
-  .no-print {
-    display: none !important;
-  }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; width: 100%; }
 
-  /* 印刷用ラベル（.print-only）を出現させる */
-  .print-only {
-    display: block !important;
-  }
-
-  /* 用紙の余白設定（端っこギリギリに印刷されないように調整） */
   @page {
-    margin: 0; 
+    size: A4 portrait;
+    margin: 5mm; 
   }
+
   body {
-    margin: 15mm; 
+    margin: 0;
+    padding: 0;
+    background-color: #fff; /* 印刷時は背景を必ず白にする */
+    color: #000;
+  }
+
+  /* ✂️ ラベル1枚分のコンテナ（4cm高さ＋切り取り線） */
+  .custom-label-container {
+    width: 100%;
+    height: 4cm;
+    box-sizing: border-box;
+    border-bottom: 1px dashed #000;
+    padding-top: 12px; 
+    position: relative;
+    page-break-inside: avoid;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* さりげない通し番号 */
+  .label-number {
+    position: absolute;
+    top: 6px; 
+    left: 10px;
+    font-size: 14px; 
+    font-weight: bold;
+    color: #333; 
+  }
+
+  /* テーブルデザイン */
+  .custom-label-table {
+    width: 100%;
+    margin-top: 10px; 
+    border-collapse: collapse;
+  }
+
+  .custom-label-table th,
+  .custom-label-table td {
+    padding: 10px 15px;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 16px;
+    border: none; /* 外枠や内枠を消してスッキリ見せる */
+  }
+
+  .custom-label-table th {
+    width: 20%; 
+    font-weight: bold;
+    border-right: 2px solid #ccc; /* 項目名と値の間に縦線だけ引く */
   }
 }
 
-/* 普段の画面（スマホやPC）では、印刷用ラベルを隠しておく */
 @media screen {
-  .print-only {
-    display: none !important;
-  }
-}
-
-/* =========================================
-   2. ご希望の「横長ラベル」のデザイン
-========================================= */
-.custom-label-table {
-  border-collapse: collapse; /* 表の隙間をなくす */
-  border: 3px solid black;   /* 外枠は少し太くする */
-  font-family: sans-serif;
-  width: auto; /* 文字の長さに合わせて自動調整 */
-}
-
-.custom-label-table th, 
-.custom-label-table td {
-  border: 1px solid black;   /* 内側の枠線 */
-  padding: 8px 15px;         /* 文字の周りの余白 */
-  font-size: 18px;           /* 文字の大きさ */
-  vertical-align: middle;
-}
-
-/* 「商品名：」「サイズ：」の部分 */
-.custom-label-table th {
-  font-weight: normal;
-  white-space: nowrap;       /* 改行させない */
-}
-
-/* 実際の商品名とサイズが入る部分 */
-.custom-label-table td {
-  font-weight: bold;
+  .print-only { display: none !important; }
 }

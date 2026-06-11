@@ -1,0 +1,47 @@
+/* =========================================
+   🌍 アプリ全体の共通設定（グローバルCSS）
+========================================= */
+
+:root {
+  /* スマホでもPCでも綺麗に見える、モダンなフォント設定 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* ダークモードのベース設定 */
+  color-scheme: dark;
+  background-color: #121212;
+  color: #ffffff;
+}
+
+body {
+  /* ブラウザが勝手につける余白（マージン）をリセット */
+  margin: 0;
+  padding: 0;
+  /* 画面全体の高さを最低でもスマホ画面いっぱいに確保 */
+  min-height: 100vh;
+  min-width: 320px;
+}
+
+#root {
+  /* Reactの描画エリアを画面いっぱいに広げる */
+  width: 100%;
+  height: 100vh;
+}
+
+/* リンクや文字選択時のデフォルト色を少しオシャレに */
+::selection {
+  background-color: #007bff;
+  color: white;
+}
+
+/* =========================================
+   🖨️ 印刷時の全体リセット
+========================================= */
+@media print {
+  body, :root {
+    /* 印刷時は強制的に背景を白、文字を黒に戻してインクの無駄遣いを防ぐ */
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+}
