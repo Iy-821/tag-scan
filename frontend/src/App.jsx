@@ -59,6 +59,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [count, setCount] = useState(0);
   const [isJobScreenOpen, setIsJobScreenOpen] = useState(false);
+  const [done, setDone] = useState(false);
 
   const testImagePart = {
     inlineData: { data: TEST_IMAGE_BASE64, mimeType: "image/jpeg" }
@@ -95,6 +96,7 @@ function App() {
   const handleNewtake = () => {
     //初期化
     setCapturedImage(null);
+    setDone(false);
     setIsParsed(false); // フォームを隠す
     setProductDataList([]); // データを空に戻す
     setCurrentText("枠内にタグを合わせてください...");
@@ -106,6 +108,7 @@ function App() {
   //AIに投げる部分
   const handleAnalyze = useCallback(async () => {
     analyzeWithGemini(photo);  //関数
+    setDone(true);
   }, [webcamRef,photo]);
 
 
@@ -322,25 +325,36 @@ function App() {
 
       {capturedImage && (
         <div>
-        <button onClick={handleRetake} disabled={isProcessing} 
-          style={{ padding:'15px 30px', margin:'15px', fontSize: '18px', backgroundColor: '#ad3213', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0 : 1}}>
-          取り直す
-        </button>
+          {!done && (
+            <div>
+            <button onClick={handleRetake} disabled={isProcessing} 
+              style={{ padding:'15px 30px', margin:'15px', fontSize: '18px', backgroundColor: '#ad3213', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0 : 1}}>
+              取り直す
+            </button>
 
-        <button onClick={() => {setIsJobScreenOpen(true)}} disabled={isProcessing}
-          style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#a18712', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-          ジョブ表示
-        </button>
+            <button onClick={() => {setIsJobScreenOpen(true)}} disabled={isProcessing}
+              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#a18712', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+              ジョブ表示
+            </button>
 
-        <button onClick={handleContinue} disabled={isProcessing}
-          style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#239182', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-          続けて撮影
-        </button>
+            <button onClick={handleContinue} disabled={isProcessing}
+              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#239182', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+              続けて撮影
+            </button>
 
-        <button onClick={handleAnalyze} disabled={isProcessing}
-          style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1b6ad1', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-          解析
-        </button>
+            <button onClick={handleAnalyze} disabled={isProcessing}
+              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1b6ad1', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+              解析
+            </button>
+            </div>
+          )}
+
+        {done && (
+          <button onClick={handleNewtake} disabled={isProcessing}
+            style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1a3f70', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+            もう一度取り直す
+          </button>
+        )}
         </div>
       )}
 
