@@ -268,7 +268,8 @@ function App() {
       </div>
 
       <div style={{ margin: '20px', padding: '10px', border: '1px solid black' }}>
-        <p>ステータス：{currentText}</p>
+        <p>Tips:A4用紙1枚につき、最大9個まで可能</p>
+        <p>{currentText}</p>
       </div>
 
 
@@ -350,10 +351,12 @@ function App() {
           )}
 
         {done && (
+          <div>
           <button onClick={handleNewtake} disabled={isProcessing}
             style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1a3f70', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-            もう一度取り直す
+            もう一度スキャンする
           </button>
+          </div>
         )}
         </div>
       )}
@@ -430,16 +433,19 @@ function App() {
     {/* 印刷用ラベル */}
     <div className="print-only">
       {productDataList.map((item, index) => (
-        <table key={index} className="custom-label-table" style={{ marginBottom: '20px' }}>
-          <tbody>
-            <tr>
-              <th>商品名：</th>
-              <td>{item.productName}</td>
-              <th>サイズ：</th>
-              <td>{item.size}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div key={index} className="label-container">
+          <table className="custom-label-table">
+            <tbody>
+              <tr>
+                <th style={{ width: '10%' }}>No.{index + 1}</th>
+                <th style={{ width: '15%' }}>商品名：</th>
+                <td style={{ width: '45%' }}>{item.productName}</td>
+                <th style={{ width: '15%' }}>サイズ：</th>
+                <td style={{ width: '15%' }}>{item.size}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       ))}
     </div>
 

@@ -199,10 +199,41 @@
 
   /* 用紙の余白設定（端っこギリギリに印刷されないように調整） */
   @page {
-    margin: 0; 
+    size: A4 portrait;
+    margin: 5mm; 
   }
   body {
-    margin: 15mm; 
+    margin: 0;
+    padding: 0; 
+  }
+  
+  /* 💡 1枚のラベルを包む箱（合計3cm、下に切り取り線） */
+  .label-container {
+    height: 3cm;           /* 切り取る紙のサイズ（高さ） */
+    width: 100%;
+    box-sizing: border-box;
+    border-bottom: 1px dashed #000; /* ハサミを入れる切り取り線（点線） */
+    display: flex;         /* 中身を上下中央に配置する魔法 */
+    align-items: center;   /* 表を縦のど真ん中に持ってくる */
+    page-break-inside: avoid; /* 印刷時に途中でページをまたがないようにする */
+  }
+
+  /* 💡 表自体のデザイン（高さ2cm） */
+  .custom-label-table {
+    height: 2cm;           /* ラベル（表）自体の高さを2cmに固定 */
+    width: 100%;
+    border-collapse: collapse;
+    border: 2px solid black; /* 外枠を少し太く */
+  }
+
+  /* セル（マス目）のデザイン */
+  .custom-label-table th, 
+  .custom-label-table td {
+    border: 1px solid black;
+    padding: 0 8px;          /* 上下のpaddingを0にして、高さを2cmに収める */
+    text-align: center;      /* 文字を真ん中に */
+    vertical-align: middle;
+    font-size: 16px;
   }
 }
 
@@ -220,7 +251,7 @@
   border-collapse: collapse; /* 表の隙間をなくす */
   border: 3px solid black;   /* 外枠は少し太くする */
   font-family: sans-serif;
-  width: auto; /* 文字の長さに合わせて自動調整 */
+  width: 100%; /* 文字の長さに合わせて自動調整 */
 }
 
 .custom-label-table th, 
