@@ -305,6 +305,8 @@ function App() {
                 />
               </label>
 
+              <img src={photo[index]} style={{ width: '100%',display: 'block', backgroundColor: '#000' }} />
+
             </div>
           ))}
 
