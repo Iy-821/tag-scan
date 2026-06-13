@@ -60,15 +60,13 @@ function App() {
   const [count, setCount] = useState(0);
   const [isJobScreenOpen, setIsJobScreenOpen] = useState(false);
   const [done, setDone] = useState(false);
-
+  const [captureState, setCaptureState] = useState(false);
+  const fileInputRef = useRef(null);
   const testImagePart = {
     inlineData: { data: TEST_IMAGE_BASE64, mimeType: "image/jpeg" }
   };
-
-  
   //AIから受け取ったデータを管理する構造体
   const [productDataList, setProductDataList] = useState([]);
-
   //解析が成功したかどうかを判定するフラグ
   const [isParsed, setIsParsed] = useState(false);
 
@@ -79,6 +77,7 @@ function App() {
     setCapturedImage(image);
     setphoto((prevPhoto) => [...prevPhoto, image]); //...prevphotoのお陰でprevphotoはphoto配列の全てを指している
     setCount((prevCount) => prevCount + 1);
+    setCaptureState(false);
   }, [webcamRef]);
 
   const handleContinue = () =>{
@@ -104,12 +103,22 @@ function App() {
     setphoto([]);
   }
 
-
   //AIに投げる部分
   const handleAnalyze = useCallback(async () => {
     analyzeWithGemini(photo);  //関数
     setDone(true);
   }, [webcamRef,photo]);
+
+  const handleDelayCapture = () =>{
+    if (captureState == false) {
+      setCaptureState(true);
+      setTimeout(handleCaptured,200);
+    }
+  }
+
+  const handleAlbumClick = () =>{
+    fileInputRef.current.click(); //Refを使うことで、ボタンがクリックされたときのアクションを指定できる（onclickの上位互換）
+  }
 
 
   // --- AI解析処理 ---
@@ -272,7 +281,6 @@ function App() {
         <p>{currentText}</p>
       </div>
 
-
       {/* ★今回のメイン：解析成功時（isParsedがtrue）に表示される入力フォーム */}
       {isParsed && (
         //全体の大枠
@@ -317,38 +325,49 @@ function App() {
           </button>
         </div>
       )}
-
-      {/* アクションボタン */}
+      <div>
       {!capturedImage && (
-        <button onClick={handleCaptured} disabled={isProcessing} 
+        <button onClick={handleDelayCapture} disabled={isProcessing} 
           style={{ padding:'15px 30px', fontSize: '18px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
           スキャンする
         </button>
+      )}
+
+      {!done && (
+        <div>
+          <button onClick={handleAlbumClick} disabled={isProcessing}
+          style={{ padding:'15px 15px', margin:'15px',  fontSize: '18px', backgroundColor: '#9fa3a3', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+          📸    
+          </button>
+        </div>
       )}
 
       {capturedImage && (
         <div>
           {!done && (
             <div>
-            <button onClick={handleRetake} disabled={isProcessing} 
-              style={{ padding:'15px 30px', margin:'15px', fontSize: '18px', backgroundColor: '#ad3213', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0 : 1}}>
-              取り直す
-            </button>
+              <div>
+                <button onClick={handleContinue} disabled={isProcessing}
+                style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#239182', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+                続けて撮影
+              </button>
 
-            <button onClick={() => {setIsJobScreenOpen(true)}} disabled={isProcessing}
-              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#a18712', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-              ジョブ表示
-            </button>
+              <button onClick={handleAnalyze} disabled={isProcessing}
+                style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1b6ad1', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+                解析
+              </button>
+              </div>
+              <div>
+                <button onClick={handleRetake} disabled={isProcessing} 
+                style={{ padding:'15px 30px', margin:'15px', fontSize: '18px', backgroundColor: '#ad3213', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0 : 1}}>
+                取り直す
+              </button>
 
-            <button onClick={handleContinue} disabled={isProcessing}
-              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#239182', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-              続けて撮影
-            </button>
-
-            <button onClick={handleAnalyze} disabled={isProcessing}
-              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1b6ad1', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-              解析
-            </button>
+              <button onClick={() => {setIsJobScreenOpen(true)}} disabled={isProcessing}
+                style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#a18712', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+                ジョブ表示
+              </button>
+              </div>
             </div>
           )}
 
@@ -362,6 +381,7 @@ function App() {
         )}
         </div>
       )}
+      </div>
 
       <div>
         {/*フラグが true なら、この下のカタマリ（ジョブ画面）を『追加で』表示する！ */}
