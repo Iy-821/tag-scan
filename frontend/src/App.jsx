@@ -4,6 +4,9 @@ import Webcam from 'react-webcam';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import './App.css';
 import { TEST_IMAGE_BASE64 } from './testImageData';
+import Button from './assets/Button.png';
+import Frame from './assets/Frame.png';
+
 
 // ==========================================
 // ★ここに取得したAPIキーを貼り付けてください★
@@ -244,8 +247,8 @@ function App() {
     <>
     <div className="no-print" style={{ textAlign: 'center', padding: '20px' }}>
       <h1>{appTitle}</h1>
-
       <div style={{ margin:'20px auto', maxWidth: '1600px', border: '4px solid #333', borderRadius:'8px', overflow:'hidden', position: 'relative' }}>
+        
         {!capturedImage && (
           <>
             <Webcam
@@ -328,15 +331,15 @@ function App() {
       <div>
       {!capturedImage && (
         <button onClick={handleDelayCapture} disabled={isProcessing} 
-          style={{ padding:'15px 30px', fontSize: '18px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
-          スキャンする
+          style={{backgroundColor: 'transparent', padding:'15px 30px', fontSize: '18px',  border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
+          <img src={Button}></img>
         </button>
       )}
 
       {!done && (
         <div>
           <button onClick={handleAlbumClick} disabled={isProcessing}
-          style={{ padding:'15px 15px', margin:'15px',  fontSize: '18px', backgroundColor: '#9fa3a3', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+          style={{padding:'15px 15px', margin:'15px',  fontSize: '18px', backgroundColor: '#9fa3a3', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
           📸    
           </button>
         </div>
