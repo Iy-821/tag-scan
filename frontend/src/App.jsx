@@ -5,44 +5,27 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import './App.css';
 import { TEST_IMAGE_BASE64 } from './testImageData';
 
-// ==========================================
-// ★ここに取得したAPIキーを貼り付けてください★
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
-// ==========================================
+
 
 //URL:http://localhost:5173
 
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// 【追加】画像を切り抜くための関数
 const cropImageFromBase64 = (base64Str) => {
-  // 1. Promise（プロミス）：画像処理は時間がかかるので、「終わるまで待っててね」という約束（非同期処理）を作ります。
   return new Promise((resolve) => {
-    // 2. メモリ上に、見えない <img> タグを作ります。
-    const img = new Image();
-    // 3. その <img> タグに、カメラで撮った画像データ（長い文字列）を読み込ませます。
-    img.src = base64Str;
-    // 4. onload = 「画像の読み込みが完全に終わったら、次の処理をしてね」という指示。
-    img.onload = () => {
-      // 5. メモリ上に、見えない <canvas>（お絵描きボード）を作ります。
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
       const canvas = document.createElement('canvas');
-      // 6. 切り抜きたいサイズを計算（元の横幅の80%、縦幅の30%）
       const cropWidth = img.width * 0.8;
       const cropHeight = img.height * 0.6;
-      // 7. 切り抜くスタート位置（左上の座標 X, Y）を計算。全体から切り抜きサイズを引いて半分にすると、ド真ん中になります。
       const startX = (img.width - cropWidth) / 2;
       const startY = (img.height - cropHeight) / 2;
-      // 8. キャンバス自体の大きさを、切り抜きサイズに合わせます。
       canvas.width = cropWidth;
       canvas.height = cropHeight;
-      // 9. キャンバスに絵を描くための「筆（コンテキスト）」を用意します。
       const ctx = canvas.getContext('2d');
-      // 10. 筆を使って、元の画像をキャンバスに描きます（ここでハサミで切り取る処理が行われます）。
-      // drawImage(画像, 元画像の切り抜き開始X, Y, 切り抜く幅, 高さ, キャンバスの描画開始X, Y, 描画する幅, 高さ)
       ctx.drawImage(img, startX, startY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-      // 11. 切り抜き終わったキャンバスの絵を、再び Base64（文字列）に戻します。
-      // 第2引数の '0.5' は、JPEGの画質を50%に落としてデータ容量を軽くする（圧縮する）指示です。
-      // resolve(...) で、「約束（Promise）の処理が終わったよ！この画像を返すよ！」と報告します。
       resolve(canvas.toDataURL('image/jpeg', 1.0));
     };
   });
@@ -64,12 +47,7 @@ function App() {
   const testImagePart = {
     inlineData: { data: TEST_IMAGE_BASE64, mimeType: "image/jpeg" }
   };
-
-  
-  //AIから受け取ったデータを管理する構造体
   const [productDataList, setProductDataList] = useState([]);
-
-  //解析が成功したかどうかを判定するフラグ
   const [isParsed, setIsParsed] = useState(false);
 
   // --- 撮影処理 ---
@@ -132,13 +110,11 @@ function App() {
         };
       });
 
-      // 3. AIモデルの呼び出し設定。「3.1-flash-lite」を使い、返事は必ず「JSON形式」にするよう強制（generationConfig）します。
       const model = genAI.getGenerativeModel({ 
         model: "gemini-3.1-flash-lite",
         generationConfig: { responseMimeType: "application/json" }
       });
 
-      // 4. プロンプト（指示文）。ここでJSONのキー名（productName等）を指定しておくことが超重要です。
       const promptStart = `
         あなたはアパレル店舗の在庫管理を支える専門AIです。
         提供された画像から、ラベル印刷に必要な情報を正確に抽出してください。
@@ -170,7 +146,6 @@ function App() {
         それでは、上記を踏まえて以下の画像を解析し、JSONの配列のみを出力してください。
       `;
 
-      // 5. AIに画像と指示を送り、返事が来るまで待機（await）します。
       //const result = await model.generateContent([prompt, ...imageParts]);  //generateContent([prompt, imagePart])が投げている部分
       const result = await model.generateContent([
         promptStart,
@@ -180,13 +155,8 @@ function App() {
       ]);
       const response = await result.response;
       let text = response.text(); // AIの返事を文字列として取り出す
-      
-      // 6. 正規表現（/ /g）という手法を使って、AIが勝手につけた ```json などの余計な文字を空文字("")に置き換えて（replace）、前後の空白を削除（trim）します。
       text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
-
-      // 7. 文字列（ただの文字の羅列）を、JavaScriptが操作できる「JSONオブジェクト（データの塊）」に変換（パース）します。
       const data = JSON.parse(text); 
-      // 8. 変換したデータをStateに保存します。これで画面のフォームに文字が入ります。
       setProductDataList(data); //構造体にデータが入る
 
       setIsParsed(true); 
@@ -204,33 +174,26 @@ function App() {
   // 特定のカード（インデックス）の、特定の項目（フィールド）を書き換える関数
   const handleChangeData = (index, field, value) => {
     setProductDataList((prevData) => {
-      // 1. 現在の配列（prevData）をそっくりそのままコピーして新しい配列を作る
       const newData = [...prevData];
-
-      // 2. コピーした配列の「index番目」のオブジェクトを見つけ、
       //    その中の「field（productName または size）」を「新しい文字（value）」に書き換える
       newData[index] = {
         ...newData[index],       // 元々入っていた他の項目（書き換えない方）をキープ
         [field]: value           // 指定された項目だけを上書き
       };
-
-      // 3. 完璧に仕上がった新しい配列をReactに返して、画面を更新してもらう
       return newData;
     });
   };
 
   const handleDeletePhoto = (targetIndex) => {
-    // 1. 写真の配列を更新する
     setphoto((prevPhoto) => {
       // prevPhoto の中から、「現在の出席番号(index)」が「消したい番号(targetIndex)」と
       // 『一致しない（!==）』ものだけを合格として残す！
       return prevPhoto.filter((_, index) => index !== targetIndex);
     });
-    // 2. 全体の撮影枚数（count）も1つ減らす
     setCount((prevCount) => prevCount - 1);
   };
 
-  // --- 画面の表示（JSX） ---
+  // --- 画面の表示 ---
   return (
     <>
     <div className="no-print" style={{ textAlign: 'center', padding: '20px' }}>
@@ -242,8 +205,8 @@ function App() {
             <Webcam
               audio={false}
               ref={webcamRef}
-              screenshotFormat="image/jpeg"     // ★追加：画質を保ちやすいJPEGを指定
-              forceScreenshotSourceSize={true}  // ★追加：画面サイズに依存せず、元の高画質でスクショを撮る！
+              screenshotFormat="image/jpeg" 
+              forceScreenshotSourceSize={true} 
               style={{ width:'100%',  display: 'block' }}
               videoConstraints={{ 
                 facingMode:'environment',
@@ -272,21 +235,15 @@ function App() {
         <p>{currentText}</p>
       </div>
 
-
-      {/* ★今回のメイン：解析成功時（isParsedがtrue）に表示される入力フォーム */}
       {isParsed && (
         //全体の大枠
         <div style={{ margin: '20px auto', maxWidth: '400px', textAlign: 'left', padding: '15px', border: '2px solid #007BFF', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
           <h3 style={{ fontSize: '18px', color: '#0e77ee', marginTop: 0 }}>📋 読み取り結果 {productDataList.length}件</h3>
           {productDataList.map((item, index) => (
-            
-            // 1件分の「カード」のデザイン
-            // Reactのルールで、一番外側のタグには必ず key={index} をつける！
             <div key={index} style={{ border: '2px solid #ccc', padding: '15px', marginBottom: '15px', borderRadius: '8px' }}>
 
               <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
                 商品名:
-                {/* value には、この1件分（item）のデータを表示する */}
                 <input 
                   type="text" 
                   value={item.productName} 
@@ -318,7 +275,6 @@ function App() {
         </div>
       )}
 
-      {/* アクションボタン */}
       {!capturedImage && (
         <button onClick={handleCaptured} disabled={isProcessing} 
           style={{ padding:'15px 30px', fontSize: '18px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
@@ -364,16 +320,14 @@ function App() {
       )}
 
       <div>
-        {/*フラグが true なら、この下のカタマリ（ジョブ画面）を『追加で』表示する！ */}
         {isJobScreenOpen && (
-          // ▼ ここからが「上に重ねる」ための特殊なCSSの枠 ▼
           <div style={{
             position: 'fixed',    // 画面全体にピタッと固定
             top: 0, left: 0,      // 一番左上を基準にする
             width: '100vw',       // 横幅を画面の100%に
             height: '100vh',      // 縦幅を画面の100%に
             backgroundColor: 'rgba(0, 0, 0, 0.7)', // 背景を「80%の濃さの黒（半透明）」にする
-            zIndex: 9999,         // 【重要】数字をデカくして、何よりも一番手前に持ってくる！
+            zIndex: 9999,         //数字をデカくして、何よりも一番手前に持ってくる！
             display: 'flex',      // 中身のレイアウト用
             justifyContent: 'center', // 左右のど真ん中に配置
             alignItems: 'center'      // 上下のど真ん中に配置
@@ -394,7 +348,6 @@ function App() {
               <button onClick={() => setIsJobScreenOpen(false)}>✖️ 閉じる</button>
             </div>
 
-              {/* ここに先ほどのヒント2で紹介した、写真を .map で並べるコードを入れる */}
               {photo.map((src,index) =>(
                 <div key={index} style={{ position: 'relative', display: 'inline-block', margin: '10px' }}>
                   <img src={src} alt={`写真${index}`} style={{ width: '100%' }}></img>
@@ -429,10 +382,8 @@ function App() {
         )}
       </div>
 
-    </div> {/* ← これが元々のメイン画面を閉じるタグ */}
+    </div> 
 
-
-    {/* 印刷用ラベル */}
     <div className="print-only">
       {productDataList.map((item, index) => (
         <div key={index} className="label-container">
@@ -451,7 +402,7 @@ function App() {
       ))}
     </div>
 
-  </>  /* ← ★★★ここが正解！！！この「空の閉じタグ」を追加してください★★★ */
+  </>
   );
 }
 export default App;
