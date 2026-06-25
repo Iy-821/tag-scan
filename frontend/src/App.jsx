@@ -192,6 +192,10 @@ function App() {
     });
   };
 
+  const handleQuantityChange = (index, value) => {
+    //フラグ：処理書く
+  }
+
   const handleDeletePhoto = (targetIndex) => {
     setphoto((prevPhoto) => {
       return prevPhoto.filter((_, index) => index !== targetIndex);
@@ -270,6 +274,16 @@ function App() {
                 />
               </label>
 
+              <lavel style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                枚数：<br/>
+                <input 
+                  type="number" 
+                  min ="1" 
+                  value={item.quantity || 1}
+                  onChange={(e) => handleChangeData(index, e.target.value)}
+                />
+              </lavel>
+
               <img src={photo[index]} style={{ width: '100%',display: 'block', backgroundColor: '#000' }} />
 
             </div>
@@ -290,14 +304,6 @@ function App() {
         </button>
       )}
 
-      {!done && (
-        <div>
-          <button onClick={handleAlbumClick} disabled={isProcessing}
-          style={{padding:'15px 15px', margin:'15px',  fontSize: '18px', backgroundColor: '#9fa3a3', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-          📸    
-          </button>
-        </div>
-      )}
 
       {capturedImage && (
         <div>
