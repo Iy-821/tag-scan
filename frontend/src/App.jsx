@@ -201,6 +201,18 @@ function App() {
     );
   }
 
+  const handleNum = (index,value) => {
+    const numValue = value;
+
+    setProductDataList((prevList) => 
+      prevList.map((item,i) =>
+      i === index
+        ? {...item, quantity: numValue }
+        : item
+      )
+    );
+  }
+
   const handleDeletePhoto = (targetIndex) => {
     setphoto((prevPhoto) => {
       return prevPhoto.filter((_, index) => index !== targetIndex);
@@ -281,12 +293,21 @@ function App() {
 
               <lavel style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
                 枚数：<br/>
+                <div>
+                  <button style={{margin:'5px'}} onClick={() => handleNum(index, item.quantity - 1)}>
+                    -
+                  </button>
                 <input 
+                  style={{margin:'5px'}}
                   type="number" 
                   min ="1" 
                   value={item.quantity || 1}
                   onChange={(e) => handleQuantityChange(index, e.target.value)} //eはeventの略
                 />
+                  <button style={{margin:'5px'}} onClick={() =>handleNum(index, item.quantity + 1)}>
+                    +
+                  </button>
+                </div>
               </lavel>
 
               <img src={photo[index]} style={{ width: '100%',display: 'block', backgroundColor: '#000' }} />
