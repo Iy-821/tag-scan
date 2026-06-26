@@ -33,6 +33,8 @@ const cropImageFromBase64 = (base64Str) => {
   });
 };
 
+
+
 function App() {
   const appTitle = "タグ読みくん";
   const webcamRef = useRef(null);
