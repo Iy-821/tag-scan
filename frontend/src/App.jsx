@@ -97,10 +97,6 @@ function App() {
     }
   }
 
-  const handleAlbumClick = () =>{
-    fileInputRef.current.click(); //Refを使うことで、ボタンがクリックされたときのアクションを指定できる（onclickの上位互換）
-  }
-
 
   // --- AI解析処理 ---
   const analyzeWithGemini = async (photoArray) => {
@@ -180,20 +176,29 @@ function App() {
   };
 
 
-  // 特定のカード（インデックス）の、特定の項目（フィールド）を書き換える関数
+  // 特定のカードの、特定の項目を書き換える関数
   const handleChangeData = (index, field, value) => {
     setProductDataList((prevData) => {
-      const newData = [...prevData];
-      newData[index] = {
-        ...newData[index],       // 元々入っていた他の項目（書き換えない方）をキープ
-        [field]: value           // 指定された項目だけを上書き
-      };
-      return newData;
+      // ここで prevData = 今の productDataList の中身が確実に入っている
+      const newData = [...prevData];   // それをコピーして
+      newData[index] = { ...newData[index], [field]: value }; // 1か所だけ変える
+      return newData; // 返したものが新しい state になる
     });
   };
 
   const handleQuantityChange = (index, value) => {
-    //フラグ：処理書く
+    //valueを、計算できる数字に変換
+    const numValue = parseInt(value, 10) || 1;
+
+    setProductDataList((prevList) =>
+      // .map() を使って、リストの服を1つずつチェックしていく
+      prevList.map((item, i) =>
+        // もし「変更された番号（index）」と「今チェックしてる服の番号（i）」が一致したら　つまり、for文
+        i === index 
+          ? { ...item, quantity: numValue } // その服だけ quantity を新しい数字に書き換える！
+          : item // 関係ない他の服は、そのままスルーする
+      )
+    );
   }
 
   const handleDeletePhoto = (targetIndex) => {
@@ -269,7 +274,7 @@ function App() {
                 <input 
                   type="text" 
                   value={item.size} 
-                  onChange={(e) => handleChangeData(index, 'size', e.target.value)}
+                  onChange={(e) => handleChangeData(index, e.target.value)}
                   style={{ width: '90%', padding: '10px' }}
                 />
               </label>
@@ -280,7 +285,7 @@ function App() {
                   type="number" 
                   min ="1" 
                   value={item.quantity || 1}
-                  onChange={(e) => handleChangeData(index, e.target.value)}
+                  onChange={(e) => handleQuantityChange(index, e.target.value)} //eはeventの略
                 />
               </lavel>
 
@@ -410,21 +415,31 @@ function App() {
 
     </div> 
 
-    <div className="print-only">
-      {productDataList.map((item, index) => (
-        <div key={index} className="label-container">
-          <table className="custom-label-table">
-            <tbody>
-              <tr>
-                <th style={{ width: '10%' }}>No.{index + 1}</th>
-                <th style={{ width: '15%' }}>商品名：</th>
-                <td style={{ width: '45%' }}>{item.productName}</td>
-                <th style={{ width: '15%' }}>サイズ：</th>
-                <td style={{ width: '15%' }}>{item.size}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    {/*後で確認する */}
+    <div className="print-only"> 
+      {productDataList.map((item, itemIndex) => (
+        
+        // 💡 ここが魔法の部分！商品の quantity（枚数）の分だけ、さらにループを回す
+        Array.from({ length: item.quantity || 1 }).map((_, copyIndex) => (
+          
+          // keyが被らないように、商品番号とコピー番号を組み合わせる
+          <div key={`${itemIndex}-${copyIndex}`} className="label-container">
+            <table className="custom-label-table">
+              <tbody>
+                <tr>
+                  {/* 連番（No.）を綺麗に並べる場合は、全体の通し番号を計算するか、そのまま表示 */}
+                  <th>No.{itemIndex + 1} ({copyIndex + 1}枚目)</th>
+                  <th>商品名：</th>
+                  <td>{item.productName}</td>
+                  <th>サイズ：</th>
+                  <td>{item.size}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        ))
+
       ))}
     </div>
   </> 
