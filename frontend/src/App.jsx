@@ -4,9 +4,11 @@ import Webcam from 'react-webcam';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import './App.css';
 import { TEST_IMAGE_BASE64 } from './testImageData';
+import Button from './assets/Button.png';
+import Frame from './assets/Frame.png';
+
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY; 
-
 
 //URL:http://localhost:5173
 
@@ -14,9 +16,9 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 
 const cropImageFromBase64 = (base64Str) => {
   return new Promise((resolve) => {
-      const img = new Image();
-      img.src = base64Str;
-      img.onload = () => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
       const canvas = document.createElement('canvas');
       const cropWidth = img.width * 0.8;
       const cropHeight = img.height * 0.6;
@@ -34,8 +36,6 @@ const cropImageFromBase64 = (base64Str) => {
 function App() {
   const appTitle = "タグ読みくん";
   const webcamRef = useRef(null);
-
-  // --- 状態（State）の管理 ---
   const [currentText, setCurrentText] = useState("枠内にタグを合わせてください...");
   const [capturedImage, setCapturedImage] = useState();   //capturedImageはただのキャプチャー
   const [photo, setphoto] = useState([]);   //写真保存庫
@@ -43,7 +43,8 @@ function App() {
   const [count, setCount] = useState(0);
   const [isJobScreenOpen, setIsJobScreenOpen] = useState(false);
   const [done, setDone] = useState(false);
-
+  const [captureState, setCaptureState] = useState(false);
+  const fileInputRef = useRef(null);
   const testImagePart = {
     inlineData: { data: TEST_IMAGE_BASE64, mimeType: "image/jpeg" }
   };
@@ -57,6 +58,7 @@ function App() {
     setCapturedImage(image);
     setphoto((prevPhoto) => [...prevPhoto, image]); //...prevphotoのお陰でprevphotoはphoto配列の全てを指している
     setCount((prevCount) => prevCount + 1);
+    setCaptureState(false);
   }, [webcamRef]);
 
   const handleContinue = () =>{
@@ -82,12 +84,18 @@ function App() {
     setphoto([]);
   }
 
-
   //AIに投げる部分
   const handleAnalyze = useCallback(async () => {
     analyzeWithGemini(photo);  //関数
     setDone(true);
   }, [webcamRef,photo]);
+
+  const handleDelayCapture = () =>{
+    if (captureState == false) {
+      setCaptureState(true);
+      setTimeout(handleCaptured,200);
+    }
+  }
 
 
   // --- AI解析処理 ---
@@ -102,9 +110,7 @@ function App() {
     //() の中にある変数base64Strは、配列の要素1個を指すための一時的な名前。（引数的なもの）
     try {
       const imageParts = photoArray.map((base64Str) => {
-        // 1. カンマで割って純粋なデータにする
         const pureBase64 = base64Str.split(",")[1];
-        // 2. Gemini専用の箱に入れて返す
         return {
           inlineData: { data: pureBase64, mimeType: "image/jpeg" }
         };
@@ -145,7 +151,6 @@ function App() {
         ルールは理解できましたね。
         それでは、上記を踏まえて以下の画像を解析し、JSONの配列のみを出力してください。
       `;
-
       //const result = await model.generateContent([prompt, ...imageParts]);  //generateContent([prompt, imagePart])が投げている部分
       const result = await model.generateContent([
         promptStart,
@@ -171,42 +176,64 @@ function App() {
   };
 
 
-  // 特定のカード（インデックス）の、特定の項目（フィールド）を書き換える関数
+  // 特定のカードの、特定の項目を書き換える関数
   const handleChangeData = (index, field, value) => {
     setProductDataList((prevData) => {
-      const newData = [...prevData];
-      //    その中の「field（productName または size）」を「新しい文字（value）」に書き換える
-      newData[index] = {
-        ...newData[index],       // 元々入っていた他の項目（書き換えない方）をキープ
-        [field]: value           // 指定された項目だけを上書き
-      };
-      return newData;
+      // ここで prevData = 今の productDataList の中身が確実に入っている
+      const newData = [...prevData];   // それをコピーして
+      newData[index] = { ...newData[index], [field]: value }; // 1か所だけ変える
+      return newData; // 返したものが新しい state になる
     });
   };
 
+  const handleQuantityChange = (index, value) => {
+    //valueを、計算できる数字に変換
+    const numValue = parseInt(value, 10) || 1;
+
+    setProductDataList((prevList) =>
+      // .map() を使って、リストの服を1つずつチェックしていく
+      prevList.map((item, i) =>
+        // もし「変更された番号（index）」と「今チェックしてる服の番号（i）」が一致したら　つまり、for文
+        i === index 
+          ? { ...item, quantity: numValue } // その服だけ quantity を新しい数字に書き換える！
+          : item // 関係ない他の服は、そのままスルーする
+      )
+    );
+  }
+
+  const handleNum = (index,value) => {
+    const numValue = value;
+
+    setProductDataList((prevList) => 
+      prevList.map((item,i) =>
+      i === index
+        ? {...item, quantity: numValue }
+        : item
+      )
+    );
+  }
+
   const handleDeletePhoto = (targetIndex) => {
     setphoto((prevPhoto) => {
-      // prevPhoto の中から、「現在の出席番号(index)」が「消したい番号(targetIndex)」と
-      // 『一致しない（!==）』ものだけを合格として残す！
       return prevPhoto.filter((_, index) => index !== targetIndex);
     });
     setCount((prevCount) => prevCount - 1);
   };
 
-  // --- 画面の表示 ---
+  // --- 画面の表示（JSX） ---
   return (
     <>
     <div className="no-print" style={{ textAlign: 'center', padding: '20px' }}>
       <h1>{appTitle}</h1>
-
       <div style={{ margin:'20px auto', maxWidth: '1600px', border: '4px solid #333', borderRadius:'8px', overflow:'hidden', position: 'relative' }}>
+        
         {!capturedImage && (
           <>
             <Webcam
               audio={false}
               ref={webcamRef}
-              screenshotFormat="image/jpeg" 
-              forceScreenshotSourceSize={true} 
+              screenshotFormat="image/jpeg"
+              forceScreenshotSourceSize={true}
               style={{ width:'100%',  display: 'block' }}
               videoConstraints={{ 
                 facingMode:'environment',
@@ -240,6 +267,8 @@ function App() {
         <div style={{ margin: '20px auto', maxWidth: '400px', textAlign: 'left', padding: '15px', border: '2px solid #007BFF', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
           <h3 style={{ fontSize: '18px', color: '#0e77ee', marginTop: 0 }}>📋 読み取り結果 {productDataList.length}件</h3>
           {productDataList.map((item, index) => (
+            
+            // 1件分の「カード」のデザイン
             <div key={index} style={{ border: '2px solid #ccc', padding: '15px', marginBottom: '15px', borderRadius: '8px' }}>
 
               <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
@@ -257,10 +286,31 @@ function App() {
                 <input 
                   type="text" 
                   value={item.size} 
-                  onChange={(e) => handleChangeData(index, 'size', e.target.value)}
+                  onChange={(e) => handleChangeData(index, e.target.value)}
                   style={{ width: '90%', padding: '10px' }}
                 />
               </label>
+
+              <lavel style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+                枚数：<br/>
+                <div>
+                  <button style={{margin:'5px'}} onClick={() => handleNum(index, Math.max(1, item.quantity - 1))}>
+                    -
+                  </button>
+                  
+                <input
+                  style={{margin:'5px'}}
+                  type="number" 
+                  min ="1" 
+                  value={item.quantity || 1}
+                  onChange={(e) => handleQuantityChange(index, e.target.value)} //eはeventの略
+                />
+                  <button style={{margin:'5px'}} onClick={() =>handleNum(index, item.quantity + 1 || 2)}> 
+                    {/* ||2 入力フォームを触らないとitem.quantityの値が設定されないから、最初の動作を保証するための2*/}
+                    +
+                  </button>
+                </div>
+              </lavel>
 
               <img src={photo[index]} style={{ width: '100%',display: 'block', backgroundColor: '#000' }} />
 
@@ -274,37 +324,41 @@ function App() {
           </button>
         </div>
       )}
-
+      <div>
       {!capturedImage && (
-        <button onClick={handleCaptured} disabled={isProcessing} 
-          style={{ padding:'15px 30px', fontSize: '18px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
-          スキャンする
+        <button onClick={handleDelayCapture} disabled={isProcessing} 
+          style={{backgroundColor: 'transparent', padding:'15px 30px', fontSize: '18px',  border: 'none', borderRadius: '5px', opacity: isProcessing ? 0.5 : 1 }}>
+          <img src={Button}></img>
         </button>
       )}
+
 
       {capturedImage && (
         <div>
           {!done && (
             <div>
-            <button onClick={handleRetake} disabled={isProcessing} 
-              style={{ padding:'15px 30px', margin:'15px', fontSize: '18px', backgroundColor: '#ad3213', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0 : 1}}>
-              取り直す
-            </button>
+              <div>
+                <button onClick={handleContinue} disabled={isProcessing}
+                style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#239182', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+                続けて撮影
+              </button>
 
-            <button onClick={() => {setIsJobScreenOpen(true)}} disabled={isProcessing}
-              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#a18712', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-              ジョブ表示
-            </button>
+              <button onClick={handleAnalyze} disabled={isProcessing}
+                style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1b6ad1', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+                解析
+              </button>
+              </div>
+              <div>
+                <button onClick={handleRetake} disabled={isProcessing} 
+                style={{ padding:'15px 30px', margin:'15px', fontSize: '18px', backgroundColor: '#ad3213', color: 'white', border: 'none', borderRadius: '5px', opacity: isProcessing ? 0 : 1}}>
+                取り直す
+              </button>
 
-            <button onClick={handleContinue} disabled={isProcessing}
-              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#239182', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-              続けて撮影
-            </button>
-
-            <button onClick={handleAnalyze} disabled={isProcessing}
-              style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#1b6ad1', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
-              解析
-            </button>
+              <button onClick={() => {setIsJobScreenOpen(true)}} disabled={isProcessing}
+                style={{ padding:'15px 30px', margin:'15px',  fontSize: '18px', backgroundColor: '#a18712', color: 'white', border: 'none', borderRadius: '15px' , opacity: isProcessing ? 0 : 1}}>
+                ジョブ表示
+              </button>
+              </div>
             </div>
           )}
 
@@ -318,6 +372,7 @@ function App() {
         )}
         </div>
       )}
+      </div>
 
       <div>
         {isJobScreenOpen && (
@@ -327,13 +382,12 @@ function App() {
             width: '100vw',       // 横幅を画面の100%に
             height: '100vh',      // 縦幅を画面の100%に
             backgroundColor: 'rgba(0, 0, 0, 0.7)', // 背景を「80%の濃さの黒（半透明）」にする
-            zIndex: 9999,         //数字をデカくして、何よりも一番手前に持ってくる！
+            zIndex: 9999,         // 数字をデカくして、何よりも一番手前に持ってくる
             display: 'flex',      // 中身のレイアウト用
             justifyContent: 'center', // 左右のど真ん中に配置
             alignItems: 'center'      // 上下のど真ん中に配置
           }}>
             
-            {/* ▼ これが半透明の黒背景の上に浮かび上がる「白いカード（ジョブ画面本体）」 ▼ */}
             <div style={{
               backgroundColor: '#fff', 
               width: '80%',         // スマホ画面の90%の幅
@@ -384,25 +438,34 @@ function App() {
 
     </div> 
 
-    <div className="print-only">
-      {productDataList.map((item, index) => (
-        <div key={index} className="label-container">
-          <table className="custom-label-table">
-            <tbody>
-              <tr>
-                <th style={{ width: '10%' }}>No.{index + 1}</th>
-                <th style={{ width: '15%' }}>商品名：</th>
-                <td style={{ width: '45%' }}>{item.productName}</td>
-                <th style={{ width: '15%' }}>サイズ：</th>
-                <td style={{ width: '15%' }}>{item.size}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    {/*後で確認する */}
+    <div className="print-only"> 
+      {productDataList.map((item, itemIndex) => (
+        
+        // 💡 ここが魔法の部分！商品の quantity（枚数）の分だけ、さらにループを回す
+        Array.from({ length: item.quantity || 1 }).map((_, copyIndex) => (
+          
+          // keyが被らないように、商品番号とコピー番号を組み合わせる
+          <div key={`${itemIndex}-${copyIndex}`} className="label-container">
+            <table className="custom-label-table">
+              <tbody>
+                <tr>
+                  {/* 連番（No.）を綺麗に並べる場合は、全体の通し番号を計算するか、そのまま表示 */}
+                  <th>No.{itemIndex + 1} ({copyIndex + 1}枚目)</th>
+                  <th>商品名：</th>
+                  <td>{item.productName}</td>
+                  <th>サイズ：</th>
+                  <td>{item.size}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        ))
+
       ))}
     </div>
-
-  </>
+  </> 
   );
 }
 export default App;
