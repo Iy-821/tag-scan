@@ -294,17 +294,19 @@ function App() {
               <lavel style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
                 枚数：<br/>
                 <div>
-                  <button style={{margin:'5px'}} onClick={() => handleNum(index, item.quantity - 1)}>
+                  <button style={{margin:'5px'}} onClick={() => handleNum(index, Math.max(1, item.quantity - 1))}>
                     -
                   </button>
-                <input 
+                  
+                <input
                   style={{margin:'5px'}}
                   type="number" 
                   min ="1" 
                   value={item.quantity || 1}
                   onChange={(e) => handleQuantityChange(index, e.target.value)} //eはeventの略
                 />
-                  <button style={{margin:'5px'}} onClick={() =>handleNum(index, item.quantity + 1)}>
+                  <button style={{margin:'5px'}} onClick={() =>handleNum(index, item.quantity + 1 || 2)}> 
+                    {/* ||2 入力フォームを触らないとitem.quantityの値が設定されないから、最初の動作を保証するための2*/}
                     +
                   </button>
                 </div>
