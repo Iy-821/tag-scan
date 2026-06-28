@@ -441,6 +441,7 @@ function App() {
     </div> 
 
 
+
     {/*後で確認する */}
     <div className="print-only"> 
       {productDataList.map((item, itemIndex) => (
